@@ -11,7 +11,7 @@ position.
   observables (Swing Reactors)
   
 - **events**  
-  REcala events (but no signals)  
+  REScala events (but no signals)  
   event stream composition is a bit complex, but this reduces the number of 
   places where the caret needs to be updated
   
