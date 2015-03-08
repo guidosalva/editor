@@ -20,10 +20,10 @@ import scala.swing.event.KeyTyped
 import scala.swing.event.MouseDragged
 import scala.swing.event.MousePressed
 
-import texteditor.JScrollableComponent
-import texteditor.LineIterator
-import texteditor.LineOffset
-import texteditor.Position
+import texteditor.commons.JScrollableComponent
+import texteditor.commons.LineIterator
+import texteditor.commons.LineOffset
+import texteditor.commons.Position
 
 case class CaretUpdate(val source: TextArea) extends Event
 
@@ -31,40 +31,40 @@ case class ValueChanged(val source: TextArea) extends Event
 
 class TextArea extends Component with Publisher {
   override lazy val peer: JScrollableComponent = new JScrollableComponent with SuperMixin
-  
+
   import peer.metrics.stringWidth
   import peer.{unitHeight => lineHeight}
-  
+
   protected val padding = 5
   protected val clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
   protected val buffer = new GapBuffer
-  
+
   caret // force lazy object initialization
-  
+
   def this(text: String) {
     this
     buffer.insert(text)
   }
-  
+
   def charCount = buffer.length
-  
+
   def lineCount = LineIterator(buffer.iterator).size
-  
+
   def wordCount = buffer.iterator.foldLeft((0, false)){(c, ch) =>
     val alphanum = Character.isLetterOrDigit(ch)
     (if (alphanum && !c._2) c._1 + 1 else c._1, alphanum)}._1
-  
+
   def selected = {
     val (dot, mark) = (caret.dot, caret.mark)
     val (start, end) = (min(dot, mark), max(dot, mark))
     buffer.iterator.slice(start, end)
   }
-  
+
   def selectAll {
     caret.dot = charCount
     caret.mark = 0
   }
-  
+
   def paste {
     removeSelection
     val c = clipboard.getContents(null);
@@ -75,14 +75,14 @@ class TextArea extends Component with Publisher {
       valueChanged
     }
   }
-  
+
   def copy {
     if (selected.nonEmpty) {
       val s = new StringSelection(selected.mkString)
       clipboard.setContents(s, s)
     }
   }
-  
+
   // A caret has a position in the document referred to as a dot.
   // The dot is where the caret is currently located in the model.
   // There is a second position maintained by the caret that represents
@@ -97,12 +97,12 @@ class TextArea extends Component with Publisher {
         buffer.caret = value
         caretUpdated
       }
-    
+
     // dot as position (row and column)
     def dotPos = LineOffset.position(buffer.iterator, dot)
     def dotPos_=(value: Position) =
       dot = LineOffset.offset(buffer.iterator, value)
-    
+
     // mark as offset
     private var markOffset = 0
     def mark = markOffset
@@ -111,12 +111,12 @@ class TextArea extends Component with Publisher {
           markOffset = value
           caretUpdated
       }
-    
+
     // mark as position (row and column)
     def markPos = LineOffset.position(buffer.iterator, mark)
     def markPos_=(value: Position) =
       mark = LineOffset.offset(buffer.iterator, value)
-    
+
     // caret location as offset
     def offset = buffer.caret
     def offset_=(value: Int) =
@@ -125,12 +125,12 @@ class TextArea extends Component with Publisher {
         markOffset = value
         caretUpdated
       }
-    
+
     // caret location as position (row and column)
     def position = LineOffset.position(buffer.iterator, dot)
     def position_=(value: Position) =
       offset = LineOffset.offset(buffer.iterator, value)
-    
+
     protected[TextArea] val blink = new Timer(500) start
     protected[TextArea] val steady = new Timer(500, false)
     protected[TextArea] var blinkVisible = false
@@ -140,24 +140,24 @@ class TextArea extends Component with Publisher {
         blinkVisible = !blinkVisible
         repaint
     }
-    
+
     protected def caretUpdated {
       def it = LineIterator(buffer.iterator)
       preferredSize = new Dimension(2 * padding + it.map(stringWidth(_)).max, (it.size + 1) * lineHeight)
-      
+
       val point = pointFromPosition(caret.dotPos)
       peer.scrollRectToVisible(new Rectangle(point.x - 8, point.y, 16, 2 * lineHeight))
-      
+
       caret.steady.restart
       repaint
-      
+
       publish(new CaretUpdate(TextArea.this))
     }
   }
-  
+
   protected def posInLinebreak(p: Int) = p > 0 && p < buffer.length &&
     buffer(p - 1) == '\r' && buffer(p) == '\n'
-  
+
   protected def removeSelection {
     val selStart = min(caret.dot, caret.mark)
     val selEnd = max(caret.dot, caret.mark)
@@ -165,14 +165,14 @@ class TextArea extends Component with Publisher {
     buffer.remove(selEnd - selStart)
     valueChanged
   }
-  
+
   protected def pointFromPosition(position: Position) = {
     val line = LineIterator(buffer.iterator).drop(position.row).next
     val y = position.row * lineHeight
     val x = stringWidth(line.substring(0, position.col))
     new Point(x + padding, y)
   }
-  
+
   protected def positionFromPoint(point: Point) = {
     val row = point.y / lineHeight
     val it = LineIterator(buffer.iterator).drop(row)
@@ -187,16 +187,16 @@ class TextArea extends Component with Publisher {
       else 0
     Position(row, col)
   }
-  
+
   listenTo(keys, mouse.clicks, mouse.moves);
-  
+
   keys.reactions += {
     case e @ KeyPressed(_, _, _, _) =>
       def shift = e.modifiers == Key.Modifier.Shift
       if (e.modifiers == Key.Modifier.Control)
         e.key match {
           case Key.V => paste
-          case Key.C => copy 
+          case Key.C => copy
           case Key.A => selectAll
           case _ =>
         }
@@ -221,7 +221,7 @@ class TextArea extends Component with Publisher {
                 offset = i + 1;
             if (shift) caret.dot = offset else caret.offset = offset
           case Key.End =>
-            val offset = 
+            val offset =
               caret.offset +
 	            buffer.iterator.drop(caret.offset).takeWhile{
 	              ch => ch != '\r' && ch != '\n'
@@ -255,67 +255,67 @@ class TextArea extends Component with Publisher {
         }
       }
   }
-  
+
   mouse.clicks.reactions += {
     case e @ MousePressed(_, _, _, _, _) =>
       this.requestFocusInWindow
       caret.position = positionFromPoint(e.point)
   }
-  
+
   mouse.moves.reactions += {
     case e @ MouseDragged(_, _, _) =>
       caret.dotPos = positionFromPoint(e.point)
   }
-  
+
   protected def valueChanged {
     caret.steady.restart
     repaint
     publish(new ValueChanged(this))
   }
-  
+
   override def paintComponent(g: Graphics2D) {
     super.paintComponent(g)
     g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON)
     g.setColor(SystemColor.text)
     g.fillRect(0, 0, size.width, size.height + lineHeight)
-    
+
     val selStart = min(caret.dot, caret.mark)
     val selEnd = max(caret.dot, caret.mark)
-    
+
     var lineIndex = 0
     var charIndex = 0
     for (line <- LineIterator(buffer.iterator)) {
       var start, middle, end = ""
       var middleX, endX = 0
-      
+
       if (selStart < charIndex + line.length && selEnd > charIndex) {
         val startIndex = if (selStart > charIndex) selStart - charIndex else 0
         val endIndex = if (selEnd < charIndex + line.length) selEnd - charIndex else line.length
-        
+
         start = line.substring(0, startIndex)
         middle = line.substring(startIndex, endIndex)
         end = line.substring(endIndex)
-        
+
         middleX = padding + stringWidth(start)
         endX = padding + stringWidth(start + middle)
-        
+
         g.setColor(SystemColor.textHighlight)
         g.fillRect(middleX, lineIndex * lineHeight + lineHeight - this.font.getSize, endX - middleX, lineHeight)
       }
       else
         start = line
-      
+
       lineIndex += 1
       charIndex += line.length
-      
+
       g.setColor(SystemColor.textText)
       g.drawString(start, padding, lineIndex * lineHeight)
       g.drawString(end, endX, lineIndex * lineHeight)
-      
+
       g.setColor(SystemColor.textHighlightText)
       g.drawString(middle, middleX, lineIndex * lineHeight)
     }
-    
+
     if (caret.visible) {
       def point = pointFromPosition(caret.position)
       g.setColor(SystemColor.textText)

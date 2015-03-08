@@ -18,10 +18,10 @@ import makro.SignalMacro.{SignalM => Signal}
 import rescala.Var
 import reswing.ReComponent
 import reswing.ReSwingValue
-import texteditor.JScrollableComponent
-import texteditor.LineIterator
-import texteditor.LineOffset
-import texteditor.Position
+import texteditor.commons.JScrollableComponent
+import texteditor.commons.LineIterator
+import texteditor.commons.LineOffset
+import texteditor.commons.Position
 
 class TextArea extends ReComponent {
   override protected lazy val peer = new Component with ComponentMixin {
