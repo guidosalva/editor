@@ -1,4 +1,4 @@
-name := "signalsAndEventsFromEventsOnly"
+name := "Editor-signalsAndEventsFromEventsOnly"
 
 version := "0.0.0"
 

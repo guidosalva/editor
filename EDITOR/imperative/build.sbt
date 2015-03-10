@@ -1,4 +1,4 @@
-name := "imperative"
+name := "Editor-imperative"
 
 version := "0.0.0"
 

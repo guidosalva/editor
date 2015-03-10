@@ -1,4 +1,4 @@
-name := "signalsAndEventsFromImperative"
+name := "Editor-signalsAndEventsFromImperative"
 
 version := "0.0.0"
 

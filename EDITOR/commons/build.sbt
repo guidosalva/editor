@@ -1,4 +1,4 @@
-name  := "commons"
+name  := "Editor-commons"
 
 version := "0.0.0"
 

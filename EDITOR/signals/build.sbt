@@ -1,4 +1,4 @@
-name := "signals"
+name := "Editor-signals"
 
 version := "0.0.0"
 

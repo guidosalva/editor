@@ -1,4 +1,4 @@
-name := "events"
+name := "Editor-events"
 
 version := "0.0.0"
 
